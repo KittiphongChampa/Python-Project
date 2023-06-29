@@ -56,6 +56,7 @@ def upload_file():
     predictions1 = flatten_model(model.predict(x1)) # Use the VGG16 model to classify the image
     features1 = np.ravel(predictions1)# Flatten the features แปลงอาเรย์แบบ 2 หรือ 3 มิติให้เป็น 1 มิติโดยการทำให้แบนราบ เพื่อให้องค์ประกอบทั้งหมดของอาร์เรย์อยู่ในแถวเดียวหรือคอลัมน์เดียว
     features1 = features1 / np.linalg.norm(features1)# Normalize the features ฟังก์ชันสำหรับการดำเนินการพีชคณิตเชิงเส้น เรียก norm() เพื่อคำนวณบรรทัดฐานของเมทริกซ์หรือเวกเตอร์
+    features1_list = features1.tolist()
 
     features2 = []  # ตัวแปรสำหรับเก็บ features2
     with open('image_data.json', 'r') as file:
@@ -75,7 +76,7 @@ def upload_file():
             else:
                 new_data = {
                     "filename": filename,
-                    "image_data" : [features1]
+                    "image_data" : features1_list
                 }
                 data[tag].append(new_data)
                 with open('image_data.json', 'w') as file:
@@ -88,7 +89,7 @@ def upload_file():
         with open('image_data.json', 'w') as file:
             object = {
                     "filename": filename,
-                    "image_data" : features1 
+                    "image_data" : features1_list 
             }
             file.write(json.dumps(object))
 
