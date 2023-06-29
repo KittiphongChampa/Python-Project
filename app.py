@@ -62,13 +62,40 @@ def upload_file():
         data = json.load(file)
 
     if tag in data:
-        image_data = data[tag][0]['image_data']
-        features2 = image_data  # กำหนดค่า features2 เป็นค่า image_data จาก JSON
+        image_data_list = data[tag]# รับข้อมูลทั้งหมดใน tag
+        for image_data in image_data_list:
+            features2 = image_data['image_data']  # รับค่า image_data จาก JSON
+            similarity = np.dot(features1, features2)
+            similarity_percentage = similarity * 100
+            percentage = ("{:.2f}%".format(similarity_percentage))
+            # เปรียบเทียบ features1 กับ features2
+            if similarity_percentage > 50.00:
+                return 'รูปภาพซ้ำเกิน 50% ' + percentage, 200
+                pass
+            else:
+                new_data = {
+                    "filename": filename,
+                    "image_data" : [features1]
+                }
+                data[tag].append(new_data)
+                with open('image_data.json', 'w') as file:
+                    json.dump(data, file)
+                return 'เพิ่มรูปภาพสำเร็จ ' + percentage, 200
+                pass
+        # image_data = data[tag][0]['image_data']
+        # features2 = image_data  # กำหนดค่า features2 เป็นค่า image_data จาก JSON
+    else: 
+        with open('image_data.json', 'w') as file:
+            object = {
+                    "filename": filename,
+                    "image_data" : features1 
+            }
+            file.write(json.dumps(object))
 
     # Calculate the cosine similarity
-    similarity = np.dot(features1, features2)
-    similarity_percentage = similarity * 100
-    percentage = ("{:.2f}%".format(similarity_percentage))
+    # similarity = np.dot(features1, features2)
+    # similarity_percentage = similarity * 100
+    # percentage = ("{:.2f}%".format(similarity_percentage))
 
     # if similarity_percentage < 50.00:
     #     with open('image_data.json', 'r+') as file:
@@ -89,7 +116,7 @@ def upload_file():
     #         json.dump(data, file)
 
     # Return a success response
-    return 'File uploaded successfully ' + percentage, 200
+    # return 'File uploaded successfully ' + percentage, 200
 
 
 if __name__ == '__main__':
