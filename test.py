@@ -52,68 +52,56 @@ def upload_file():
     x1 = np.expand_dims(x1, axis=0)
     x1 = preprocess_input(x1)
 
-    features1 = []
     predictions1 = flatten_model(model.predict(x1)) # Use the VGG16 model to classify the image
     features1 = np.ravel(predictions1)# Flatten the features แปลงอาเรย์แบบ 2 หรือ 3 มิติให้เป็น 1 มิติโดยการทำให้แบนราบ เพื่อให้องค์ประกอบทั้งหมดของอาร์เรย์อยู่ในแถวเดียวหรือคอลัมน์เดียว
     features1 = features1 / np.linalg.norm(features1)# Normalize the features ฟังก์ชันสำหรับการดำเนินการพีชคณิตเชิงเส้น เรียก norm() เพื่อคำนวณบรรทัดฐานของเมทริกซ์หรือเวกเตอร์
-    features1_list = features1.tolist()
+    
+    # features1_list = features1.tolist()
+    data = {
+        tag: []
+    }
 
-    features2 = []  # ตัวแปรสำหรับเก็บ features2
-    with open('image_data.json', 'r') as file:
-        data = json.load(file)
+    json_object = {
+        "filename": filename,
+        "image_data": features1
+    }
+    data[tag].append(json_object)
+    
+    json_data = json.dumps(data)
 
-    if data != " ":
-        if tag in data:
-            image_data_list = data[tag]# รับข้อมูลทั้งหมดใน tag
-            for image_data in image_data_list:
-                features2 = image_data['image_data']  # รับค่า image_data จาก JSON
-                similarity = np.dot(features1, features2)
-                similarity_percentage = similarity * 100
-                percentage = ("{:.2f}%".format(similarity_percentage))
-                # เปรียบเทียบ features1 กับ features2
-                if similarity_percentage > 50.00:
-                    file_path = os.path.join(upload_dir, filename)  # สร้างเส้นทางไฟล์แบบเต็ม
-                    if os.path.exists(file_path):  # ตรวจสอบว่าไฟล์มีอยู่จริงหรือไม่
-                        os.remove(file_path)
-                    return 'รูปภาพซ้ำเกิน 50% ' + percentage, 200
-                    pass
-                else:
-                    new_data = {
-                        "filename": filename,
-                        "image_data" : features1_list
-                    }
-                    data[tag].append(new_data)
-                    with open('image_data.json', 'w') as file:
-                        json.dump(data, file)
-                    return 'เพิ่มรูปภาพสำเร็จ ' + percentage, 200
-                    pass
+    with open('image_data.json', 'w') as file:
+        file.write(json_data)
+        
+    # data = {tag: features1_list}
 
-        else: 
-            new_data = {
-                tag: [
-                    {
-                        "filename": filename,
-                        "image_data": features1_list
-                    }
-                ]
-            }
-            data.update(new_data)
-            with open('image_data.json', 'w') as file:
-                json.dump(data, file)
-            return 'เพิ่มรูปภาพสำเร็จ', 200
-    else :
-        data = {
-            tag: []
-        }
-        object = {
-                "filename": filename,
-                "image_data" : features1_list 
-        }
-        data[tag].append(object)
-        json_data = json.dumps(data)
-        with open('image_data.json', 'w') as file:
-            file.write(json_data)
-            return 'เพิ่มรูปภาพสำเร็จ ', 200
+    with open('image_data.json', 'w') as file:
+        json.dump(data, file)
+
+    # if os.path.exists('image_data.json'):
+    #     with open('image_data.json', 'r') as file:
+    #         data = json.load(file)
+
+    # Calculate the cosine similarity
+    # similarity = np.dot(features1, features2)
+    # similarity_percentage = similarity * 100
+    # percentage = ("{:.2f}%".format(similarity_percentage))
+
+    # Return a success response
+    # return 'File uploaded successfully' + percentage, 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+    features1_list = features1.tolist()
+
+    json_object = {
+        "filename": filename,
+        "image_data": features1_list
+    }
+
+    data = {tag: [json_object]}
+
+    with open('image_data.json', 'w') as file:
+        json.dump(data, file)

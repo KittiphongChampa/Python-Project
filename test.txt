@@ -1,0 +1,15 @@
+data = {
+        tag: []
+    }
+
+    features1_list = features1.tolist()
+    json_object = {
+        "filename": filename,
+        "image_data": features1
+    }
+    
+
+    data = {tag: features1_list}
+
+    with open('image_data.json', 'w') as file:
+        json.dump(data, file)
