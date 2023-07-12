@@ -106,7 +106,7 @@ def api():
         return 'No file provided', 400
 
     tag = request.form.get('tag')
-    app.logger.debug('Tag: %s', tag)
+    # app.logger.debug('Tag: %s', tag)
     file = request.files['file']
     filename = str(uuid.uuid4()) + '.' + file.filename.split('.')[-1] # Generate a random filename
 
@@ -136,34 +136,43 @@ def api():
     with open('image_data.json', 'r') as file:
         data = json.load(file)
 
-    if data != " ":
-        if tag in data:
-            for i in data:
-                print('ผลลัพธ์ : ',i)
-            # image_data_list = data[tag]# รับข้อมูลทั้งหมดใน tag
-            # for image_data in image_data_list:
-            #     features2 = image_data['image_data']  # รับค่า image_data จาก JSON
-            # print('test', features2)
-            # similarity = np.dot(features1, features2)
-            # similarity_percentage = similarity * 100
-            # percentage = ("{:.2f}%".format(similarity_percentage))
-            # if similarity_percentage > 50.00:
-            #     file_path = os.path.join(upload_dir, filename)  # สร้างเส้นทางไฟล์แบบเต็ม
-            #     if os.path.exists(file_path):  # ตรวจสอบว่าไฟล์มีอยู่จริงหรือไม่
-            #         os.remove(file_path)
-            #     return 'รูปภาพซ้ำเกิน 50% ' + percentage, 200
-            #     # return jsonify('เพิ่มรูปภาพสำเร็จ ',percentage, 200)
-            # else:
-            #     new_data = {
-            #         "filename": filename,
-            #         "image_data" : features1_list
-            #     }
 
-            #     data[tag].append(new_data)
-            #     with open('image_data.json', 'w') as file:
-            #         json.dump(data, file)
-            #     return 'เพิ่มรูปภาพสำเร็จ ' + percentage, 200
-            #     # return jsonify('เพิ่มรูปภาพสำเร็จ ',percentage, 200)
+    # print(data[tag][1]['filename'])
+    if data != " ":
+        if tag in data:#หากมี tag อยู่ใน json file
+            for i in data[tag]:
+                similarity = np.dot(features1, i['image_data'])
+                similarity_percentage = similarity * 100
+                percentage = ("{:.2f}%".format(similarity_percentage))
+                print('percentage',percentage)
+                # features2.append(i)
+            # print('ผลลัพธ์ : ',features2)
+
+            # for x in features2:
+            #     # print(x)
+            #     similarity = np.dot(features1, x['image_data'])
+            #     similarity_percentage = similarity * 100
+            #     percentage = ("{:.2f}%".format(similarity_percentage))
+            #     if similarity_percentage > 50.00:
+            #         print('รูปภาพซ้ำเกิน 50% โดยรูป : ', filename ,' และ ', x['filename'])
+            #         # file_path = os.path.join(upload_dir, filename)  # สร้างเส้นทางไฟล์แบบเต็ม
+            #         # if os.path.exists(file_path):  # ตรวจสอบว่าไฟล์มีอยู่จริงหรือไม่
+            #         #     os.remove(file_path)
+            #         # return 'รูปภาพซ้ำเกิน 50% ' + percentage, 200
+            #         # return jsonify('รูปภาพซ้ำเกิน 50% ', percentage, 200)
+            #     else:
+            #         print('เพิ่มรูปภาพสำเร็จ')
+            #         # new_data = {
+            #         #     "filename": filename,
+            #         #     "image_data" : features1_list
+            #         # }
+
+            #         # data[tag].append(new_data)
+            #         # with open('image_data.json', 'w') as file:
+            #         #     json.dump(data, file)
+            #         # return 'เพิ่มรูปภาพสำเร็จ ' + percentage, 200
+            #         # return jsonify('เพิ่มรูปภาพสำเร็จ ',percentage, 200)
+
         else: 
             new_data = {
                 tag: [
