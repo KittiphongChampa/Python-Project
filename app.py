@@ -144,7 +144,11 @@ def api():
                 similarity = np.dot(features1, i['image_data'])
                 similarity_percentage = similarity * 100
                 percentage = ("{:.2f}%".format(similarity_percentage))
-                print('percentage',percentage)
+                if similarity_percentage > 50.00:
+                    print('รูปภาพซ้ำเกิน 50% โดยรูป : ', filename ,' และ ', i['filename'])
+                    break
+                else:
+                    print('เพิ่มรูปภาพสำเร็จ')
                 # features2.append(i)
             # print('ผลลัพธ์ : ',features2)
 
