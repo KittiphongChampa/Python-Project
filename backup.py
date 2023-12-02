@@ -76,14 +76,10 @@ def api_SingleImage():
     keypoints1, descriptors1 = orb.detectAndCompute(imgFT1, None)
 
     existing_record = collection.find_one({"_id": tag})
-    #ถ้ามี tag ใน MongoDB
+    # ถ้ามี tag ใน MongoDB
     if existing_record:
         user_data = existing_record.get("data", [])
-
-        #ใช้ตรวจสอบว่ามีการอัปเดตข้อมูลหรือไม่
-        updated = False
-
-        #ตรวจสอบรูปของคนอื่นก่อน
+        updated = False  # ใช้ตรวจสอบว่ามีการอัปเดตข้อมูลหรือไม่
         for user_entry in user_data:
             #เช็คว่ามี userID ที่ตรงกันถ้าไม่มีทำ if ถ้ามีทำ else
             if user_entry.get("userID") != userID:
@@ -110,49 +106,44 @@ def api_SingleImage():
                         # SUM
                         similarity_percentage = (FM_score_similarity + CNN_score_similarity) / 2
                         # print("similarity_percentage : ",similarity_percentage)
-                        
 
                         percentage = ("{:.2f}%".format(similarity_percentage))
                         print(percentage)
                         if similarity_percentage >= 50.00:
-                            # similar_filenames.append(i['imageID']+"/"+i['filename'] + "/" + percentage)
-                            similar_filenames.append(i['imageID']+ "/" + percentage)
+                            similar_filenames.append(i['imageID']+i['filename'] + "/" + percentage)
                         else:
                             continue
                     else :
                         continue
             else :
-                continue
-
-        #ตรวจสอบรูปของตัวเอง
-        for user_entry in user_data:
-            if user_entry.get("userID") == userID:
-                if similar_filenames:
-                    status = "similar"
+                # เจอ userID เดียวกัน ให้ทำการอัปเดตรายการ images
+                for i in user_entry.get("images", []):
+                    # ตรวจสอบว่า filename ซ้ำกันหรือไม่
+                    if i['filename'] == filename:
+                        # ถ้า filename ซ้ำกันให้อัปเดตข้อมูล image_data
+                        i['image_data'] = features1_list
+                        updated = True
+                        break
                 else:
-                    status = "pass"
-                new_data = {
-                    "imageID": imageID,
-                    "filename": filename,
-                    "status": status,
-                    "image_data": features1_list
-                }
-                user_entry.get("images", []).append(new_data)
-                updated = True
-                break
-            else: 
-                continue
-
-        #ไม่มีรูปภาพที่ซ้ำ และ มีข้อมูลของตัวเองอยู่ใน tag
-        if not similar_filenames and updated:
+                    # ถ้าไม่มี filename ที่ซ้ำกันให้เพิ่มข้อมูลรูปภาพใหม่
+                    new_data = {
+                        "imageID": imageID,
+                        "filename": filename,
+                        "status": "pass",
+                        "image_data": features1_list
+                    }
+                    user_entry.get("images", []).append(new_data)
+                    updated = True
+        
+        if updated:
             # หลังจากวนลูปรายการ images ทั้งหมด เราจะทำการอัปเดตข้อมูลใน MongoDB
             results = collection.update_one({"_id": tag}, {"$set": {"data": user_data}})
+            print(results)
             if results.modified_count > 0:
                 return jsonify({"status": "ok"})
             else:
                 return jsonify({"status": "error", "message": "Failed to update data in MongoDB"})
-        
-        #ไม่มีรูปภาพที่ซ้ำ 
+
         elif not similar_filenames: # รายการว่าง
             new_data = {
                 "imageID": imageID,
@@ -167,17 +158,7 @@ def api_SingleImage():
             else:
                 return jsonify({"status": "error", "message": "Failed to update data in MongoDB"})
 
-        #มีรูปภาพที่ซ้ำ และ มีข้อมูลของตัวเองอยู่ใน tag  
-        elif similar_filenames and updated:
-            results = collection.update_one({"_id": tag}, {"$set": {"data": user_data}})
-            if results.modified_count > 0:
-                return jsonify({"status": "similar", "similar_filenames": similar_filenames , "image problem": filename})
-            else:
-                return jsonify({"status": "error", "message": "Failed to update data in MongoDB"})
-
-        #มีรูปภาพซ้ำ  
         else : # รายการไม่ว่าง
-            print("เข้า",similar_filenames)
             new_data = {
                 "imageID": imageID,
                 "filename": filename,
@@ -186,12 +167,12 @@ def api_SingleImage():
             }
             result = collection.update_one({"_id": tag}, {"$push": {"data": {"userID": userID, "images": [new_data]}}})
             if result.modified_count > 0:
+                print(similar_filenames)
                 return jsonify({"status": "similar", "similar_filenames": similar_filenames , "image problem": filename})
             else:
                 return jsonify({"status": "error", "message": "Failed to update data in MongoDB"})
-    
-    #ถ้าไม่มี tag ใน MongoDB
-    else :
+
+    else: # ถ้าไม่มี tag ใน MongoDB
         new_record = {
             "_id": tag,
             "data": [
@@ -270,14 +251,9 @@ def upload_images():
             # ถ้ามี tag ใน MongoDB
             if existing_record:
                 user_data = existing_record.get("data", [])
-
-                # ใช้ตรวจสอบว่ามีการอัปเดตข้อมูลหรือไม่
-                updated = False 
-
-                #ตรวจสอบรูปของคนอื่นก่อน
+                updated = False # ใช้ตรวจสอบว่ามีการอัปเดตข้อมูลหรือไม่
                 for user_entry in user_data:
-
-                    #เช็คว่ามี userID ที่ตรงกัน ถ้าไม่มีทำ if ถ้ามีทำ else
+                    #เช็คว่ามี userID ที่ตรงกันถ้าไม่มีทำ if ถ้ามีทำ else
                     if user_entry.get("userID") != userID:
                         for i in user_entry.get("images", []):
                             #เช็คว่ามี status ที่ตรงกันถ้ามีทำ if ถ้าไม่มีทำ else
@@ -305,82 +281,58 @@ def upload_images():
 
                                 percentage = ("{:.2f}%".format(similarity_percentage))
                                 if similarity_percentage >= 50.00:
-                                    similar_filenames.append(i['imageID']+ "/" + percentage)
+                                    similar_filenames.append(i['imageID']+i['filename'] + "/" + percentage)
                                 else:
                                     continue
                             else:
                                 continue
+
                     else :
-                        continue
-                
-                #ตรวจสอบรูปของตัวเอง
-                for user_entry in user_data:
-                    if user_entry.get("userID") == userID:
-                        print("เข้า == userID")
-                        if similar_filenames:
-                            status = "similar"
-                        else:
-                            status = "pass"
+                        print("เข้า else")
                         new_data = {
                             "imageID": ImageID_secure,
                             "filename": filename_secure,
-                            "status": status,
+                            "status": "pass",
                             "image_data": features1_list
                         }
                         user_entry.get("images", []).append(new_data)
                         updated = True
-                        break
-                    else: 
-                        continue
                 
-                print("similar_filenames : ", similar_filenames)
-
-                #ไม่มีรูปภาพที่ซ้ำ และ มีข้อมูลของตัวเองอยู่ใน tag
-                if not similar_filenames and updated:
+                if updated:
                     results = collection.update_one({"_id": tag}, {"$set": {"data": user_data}})
+                    print(results)
                     if results.modified_count > 0:
                         print("รายการสำเร็จ")
                         continue
                     else:
                         return jsonify({"status": "error", "message": "Failed to update data in MongoDB"})
 
-                #ไม่มีรูปภาพที่ซ้ำ 
                 elif not similar_filenames: # รายการว่าง
                     new_data = {
-                        "imageID": ImageID_secure,
-                        "filename": filename_secure,
+                        "imageID": imageID,
+                        "filename": filename,
                         "status": "pass",
                         "image_data": features1_list
                     }
                     # เพิ่มข้อมูลใน MongoDB
                     result = collection.update_one({"_id": tag}, {"$push": {"data": {"userID": userID, "images": [new_data]}}})
+                    print(result)
                     if result.modified_count > 0:
                         print("รายการสำเร็จ")
                         continue
                     else:
                         return jsonify({"status": "error", "message": "Failed to update data in MongoDB"})
 
-                #มีรูปภาพที่ซ้ำ และ มีข้อมูลของตัวเองอยู่ใน tag  
-                elif similar_filenames and updated:
-                    results = collection.update_one({"_id": tag}, {"$set": {"data": user_data}})
-                    if results.modified_count > 0:
-                        similar_multi_list.append(ImageID_secure + ":" + ", ".join(similar_filenames))
-                        continue
-                    else:
-                        return jsonify({"status": "error", "message": "Failed to update data in MongoDB"})
-
-                #มีรูปภาพซ้ำ 
                 else : # รายการไม่ว่าง
                     new_data = {
-                        "imageID": ImageID_secure,
-                        "filename": filename_secure,
+                        "imageID": imageID,
+                        "filename": filename,
                         "status": "similar",
                         "image_data": features1_list
                     }
                     result = collection.update_one({"_id": tag}, {"$push": {"data": {"userID": userID, "images": [new_data]}}})
                     if result.modified_count > 0:
                         similar_multi_list.append(ImageID_secure + ":" + ", ".join(similar_filenames))
-                        continue
                     else:
                         return jsonify({"status": "error", "message": "Failed to update data in MongoDB"})
 
